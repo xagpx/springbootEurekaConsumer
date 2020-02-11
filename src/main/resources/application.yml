@@ -1,0 +1,57 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: eureka-consumer
+eureka:
+  client:
+    service-url:
+      #设置服务注册中心地址
+      defaultZone:
+        http://localhost:8761/eureka/
+  instance:
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}
+    prefer-ip-address: true 
+#feign客户端配置
+feign:
+  hystrix:
+    #设置feign开启hystrix(服务保护）
+    enabled: true
+#ribbon配置
+#ribbon:
+#  eureka:
+#    enabled: true
+  #ribbon的超时时间要大于hystrix的超时时间，否则 hystrix自定义的超时时间毫无意义
+#  ReadTimeout: 5000
+#  ConnectTimeout: 5000
+
+#hystrix配置
+hystrix:
+  threadpool:
+    # 指定服务的配置
+    eureka-provider:
+      coreSize: 1
+      maxQueueSize: 1
+      queueSizeRejectionThreshold: 1
+    # 这是默认的配置
+    default:
+      coreSize: 1
+      maxQueueSize: 200
+      queueSizeRejectionThreshold: 2
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            #feign整合hystrix 光设置Hystrix 超时没用的要配合ribbon超时
+            timeoutInMilliseconds: 3000
+      circuitBreaker:
+        #默认20 ，熔断的阈值，如何user服务报错满足3次，熔断器就会打开，就算order之后请求正确的数据也不行。
+        requestVolumeThreshold: 3
+        #默认5S ， 等5S之后熔断器会处于半开状态，然后下一次请求的正确和错误讲决定熔断器是否真的关闭和是否继续打开
+        sleepWindowInMilliseconds: 8000
+zuul:
+  routes:
+    client-a:
+      path: /client/**
+      serviceId: eureka-consumer
